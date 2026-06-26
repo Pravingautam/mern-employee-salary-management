@@ -11,6 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: db_penggajian3
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -37,21 +51,21 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Create .env
-  working-directory: Backend
-  run: |
-    echo "APP_PORT=3000" > .env
-    echo "SESS_SECRET=testsecret" >> .env
-    echo "DB_HOST=127.0.0.1" >> .env
-    echo "DB_PORT=3306" >> .env
-    echo "DB_USER=root" >> .env
-    echo "DB_PASSWORD=root" >> .env
-    echo "DB_NAME=employee_db" >> .env
+        working-directory: Backend
+        run: |
+          echo "APP_PORT=3000" > .env
+          echo "SESS_SECRET=testsecret" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_USER=root" >> .env
+          echo "DB_PASSWORD=root" >> .env
+          echo "DB_NAME=db_penggajian3" >> .env
 
       - name: Start Backend Server
         working-directory: Backend
         run: |
           npm start > server.log 2>&1 &
-          sleep 15
+          sleep 20
 
       - name: Wait for Server
         run: |
