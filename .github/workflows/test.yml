@@ -36,6 +36,12 @@ jobs:
         working-directory: tests
         run: npx playwright install --with-deps
 
+      - name: Create .env
+        working-directory: Backend
+        run: |
+          echo "APP_PORT=3000" > .env
+          echo "SESS_SECRET=testsecret" >> .env
+
       - name: Start Backend Server
         working-directory: Backend
         run: |
