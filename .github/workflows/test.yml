@@ -37,10 +37,15 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Create .env
-        working-directory: Backend
-        run: |
-          echo "APP_PORT=3000" > .env
-          echo "SESS_SECRET=testsecret" >> .env
+  working-directory: Backend
+  run: |
+    echo "APP_PORT=3000" > .env
+    echo "SESS_SECRET=testsecret" >> .env
+    echo "DB_HOST=127.0.0.1" >> .env
+    echo "DB_PORT=3306" >> .env
+    echo "DB_USER=root" >> .env
+    echo "DB_PASSWORD=root" >> .env
+    echo "DB_NAME=employee_db" >> .env
 
       - name: Start Backend Server
         working-directory: Backend
