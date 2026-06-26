@@ -2,78 +2,75 @@ name: Playwright Tests
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   test:
-    timeout-minutes: 60
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 60
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Install dependencies (root)
+      - name: Install Backend Dependencies
+        working-directory: Backend
         run: npm install
 
-      - name: Install dependencies (tests folder)
-        run: |
-          cd tests
-          npm install
+      - name: Install Frontend Dependencies
+        working-directory: Frontend
+        run: npm install
+
+      - name: Install Test Dependencies
+        working-directory: tests
+        run: npm install
 
       - name: Install Playwright Browsers
-        run: |
-          cd tests
-          npx playwright install --with-deps
+        working-directory: tests
+        run: npx playwright install --with-deps
 
-      - name: Start backend server
-        run: npm start > /tmp/server.log 2>&1 &
-        env:
-          NODE_ENV: production
-        timeout-minutes: 2
-
-      - name: Wait for server to start
+      - name: Start Backend Server
+        working-directory: Backend
         run: |
-          echo "Waiting for server to start..."
+          npm start > server.log 2>&1 &
+          sleep 15
+
+      - name: Wait for Server
+        run: |
           for i in {1..30}; do
-            if curl -f http://localhost:3000 > /dev/null 2>&1; then
-              echo "Server is running!"
+            if curl -f http://localhost:3000; then
+              echo "Server is running"
               exit 0
             fi
-            echo "Attempt $i/30 - Server not ready yet, waiting..."
+            echo "Waiting..."
             sleep 2
           done
-          echo "Server failed to start!"
-          echo "Server logs:"
-          cat /tmp/server.log
+          cat Backend/server.log
           exit 1
-        timeout-minutes: 2
 
-      - name: Run Playwright tests
-        run: |
-          cd tests
-          npx playwright test
-        continue-on-error: true
+      - name: Run Playwright Tests
+        working-directory: tests
+        run: npx playwright test
 
       - name: Upload Playwright Report
-        uses: actions/upload-artifact@v4
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: tests/playwright-report/
+          path: tests/playwright-report
           retention-days: 30
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
+      - name: Upload Test Results
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: tests/test-results/
+          path: tests/test-results
           retention-days: 30
