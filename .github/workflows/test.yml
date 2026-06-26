@@ -15,66 +15,75 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_PASSWORD: ""
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: db_penggajian3
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Install Backend Dependencies
+      - name: Install Backend
         working-directory: Backend
         run: npm install
 
-      - name: Install Frontend Dependencies
+      - name: Install Frontend
         working-directory: Frontend
         run: npm install
 
-      - name: Install Test Dependencies
+      - name: Install Tests
         working-directory: tests
         run: npm install
 
-      - name: Install Playwright Browsers
-        working-directory: tests
-        run: npx playwright install --with-deps
+      - name: Install MySQL Client
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+
+      - name: Wait for MySQL
+        run: |
+          until mysql -h127.0.0.1 -uroot --protocol=tcp -e "SELECT 1"; do
+            echo "Waiting for MySQL..."
+            sleep 5
+          done
+
+      - name: Import Database
+        run: |
+          mysql -h127.0.0.1 -uroot db_penggajian3 < Backend/db/db_penggajian3.sql
 
       - name: Create .env
         working-directory: Backend
         run: |
           echo "APP_PORT=3000" > .env
           echo "SESS_SECRET=testsecret" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_USER=root" >> .env
-          echo "DB_PASSWORD=root" >> .env
-          echo "DB_NAME=db_penggajian3" >> .env
 
-      - name: Start Backend Server
+      - name: Install Playwright Browsers
+        working-directory: tests
+        run: npx playwright install --with-deps
+
+      - name: Start Backend
         working-directory: Backend
         run: |
           npm start > server.log 2>&1 &
-          sleep 20
+          sleep 15
 
       - name: Wait for Server
         run: |
           for i in {1..30}; do
             if curl -f http://localhost:3000; then
-              echo "Server is running"
+              echo "Server Running"
               exit 0
             fi
-            echo "Waiting..."
             sleep 2
           done
           cat Backend/server.log
@@ -84,18 +93,16 @@ jobs:
         working-directory: tests
         run: npx playwright test
 
-      - name: Upload Playwright Report
+      - name: Upload Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: tests/playwright-report
-          retention-days: 30
 
-      - name: Upload Test Results
+      - name: Upload Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: tests/test-results
-          retention-days: 30
