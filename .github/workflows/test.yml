@@ -16,7 +16,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: ""
-          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
           MYSQL_DATABASE: db_penggajian3
         ports:
           - 3306:3306
@@ -30,25 +30,27 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Install Backend
+      - name: Install Backend Dependencies
         working-directory: Backend
         run: npm install
 
-      - name: Install Frontend
+      - name: Install Frontend Dependencies
         working-directory: Frontend
         run: npm install
 
-      - name: Install Tests
+      - name: Install Test Dependencies
         working-directory: tests
         run: npm install
 
       - name: Install MySQL Client
-        run: sudo apt-get update && sudo apt-get install -y mysql-client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
 
       - name: Wait for MySQL
         run: |
@@ -61,16 +63,18 @@ jobs:
         run: |
           mysql -h127.0.0.1 -uroot db_penggajian3 < Backend/db/db_penggajian3.sql
 
-      - name: Create .env
+      - name: Create Backend .env
         working-directory: Backend
         run: |
-          echo "APP_PORT=3000" > .env
-          echo "SESS_SECRET=testsecret" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_NAME=db_penggajian3" >> .env
-          echo "DB_USER=root" >> .env
-          echo "DB_PASSWORD=" >> .env
-          echo "DB_PORT=3306" >> .env
+          cat <<EOF > .env
+          APP_PORT=3000
+          SESS_SECRET=testsecret
+          DB_HOST=127.0.0.1
+          DB_NAME=db_penggajian3
+          DB_USER=root
+          DB_PASSWORD=
+          DB_PORT=3306
+          EOF
 
       - name: Install Playwright Browsers
         working-directory: tests
@@ -82,15 +86,16 @@ jobs:
           npm start > server.log 2>&1 &
           sleep 20
 
-      - name: Wait for Server
+      - name: Wait for Backend
         run: |
           for i in {1..30}; do
             if curl -f http://localhost:3000; then
-              echo "Server Running"
+              echo "Backend is running"
               exit 0
             fi
             sleep 2
           done
+          echo "Backend failed to start"
           cat Backend/server.log
           exit 1
 
@@ -98,14 +103,14 @@ jobs:
         working-directory: tests
         run: npx playwright test
 
-      - name: Upload Report
+      - name: Upload Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: tests/playwright-report
 
-      - name: Upload Results
+      - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
