@@ -53,7 +53,8 @@ app.use(AuthRoute);
 app.use(DataKehadiranRoute);
 
 // store.sync();
+const PORT = process.env.APP_PORT || 3000;
 
-app.listen(process.env.APP_PORT, () => {
-    console.log('Server up and running...');
+app.listen(PORT, () => {
+    console.log(`Server up and running on port ${PORT}`);
 });
