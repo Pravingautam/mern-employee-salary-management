@@ -66,6 +66,11 @@ jobs:
         run: |
           echo "APP_PORT=3000" > .env
           echo "SESS_SECRET=testsecret" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_NAME=db_penggajian3" >> .env
+          echo "DB_USER=root" >> .env
+          echo "DB_PASSWORD=" >> .env
+          echo "DB_PORT=3306" >> .env
 
       - name: Install Playwright Browsers
         working-directory: tests
@@ -75,7 +80,7 @@ jobs:
         working-directory: Backend
         run: |
           npm start > server.log 2>&1 &
-          sleep 15
+          sleep 20
 
       - name: Wait for Server
         run: |
